@@ -4,7 +4,7 @@
   "lib": {
     "entryFile": "src/public_api.ts",
     "umdModuleIds": {
-      "google-libphonenumber": "^3.2.1",
+      "libphonenumber-js": "^1.7.8",
       "ngx-bootstrap": "^3.1.3"
     }
   }

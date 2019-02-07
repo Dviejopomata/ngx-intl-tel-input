@@ -3,8 +3,8 @@ import { ControlValueAccessor, NG_VALIDATORS, NG_VALUE_ACCESSOR, FormControl } f
 import { CountryCode } from './data/country-code';
 import { phoneNumberValidator } from './ngx-intl-tel-input.validator';
 import { Country } from './model/country.model';
-import * as lpn from 'google-libphonenumber';
-
+import examples from 'libphonenumber-js/examples.mobile.json';
+import { parse, format, ParsedNumber, CountryCode as PhoneCountryCode, getExampleNumber, PhoneNumber} from 'libphonenumber-js';
 @Component({
 	selector: 'ngx-intl-tel-input',
 	templateUrl: './ngx-intl-tel-input.component.html',
@@ -37,7 +37,6 @@ export class NgxIntlTelInputComponent implements OnInit {
 	allCountries: Array<Country> = [];
 	preferredCountriesInDropDown: Array<Country> = [];
 	selectedCountry: Country;
-	phoneUtil = lpn.PhoneNumberUtil.getInstance();
 	disabled = false;
 	errors: Array<any> = ['Phone number is required.'];
 
@@ -68,23 +67,23 @@ export class NgxIntlTelInputComponent implements OnInit {
 			this.selectedCountry = this.preferredCountriesInDropDown[0];
 		} else {
 			this.selectedCountry = this.allCountries[0];
-		}
+    }
 	}
 
 	public onPhoneNumberChange(): void {
 		this.value = this.phoneNumber;
 
-		let number: lpn.PhoneNumber;
+		let number: ParsedNumber;
 		try {
-      number = this.phoneUtil.parse(this.phoneNumber, this.selectedCountry.iso2.toUpperCase());
+      number = parse(this.phoneNumber, this.selectedCountry.iso2);
 		} catch (e) {
     }
 
     let countryCode = this.selectedCountry.iso2;
     // auto select country based on the extension (e.g select spain if number starts with +34)
     if (this.enableAutoCountrySelect) {
-      countryCode = number && number.getCountryCode()
-        ? this.getCountryIsoCode(number.getCountryCode())
+      countryCode = number && number.country
+        ? number.country
         : this.selectedCountry.iso2;
       if (countryCode !== this.selectedCountry.iso2) {
         const newCountry = this.allCountries.find(c => c.iso2 === countryCode);
@@ -94,11 +93,12 @@ export class NgxIntlTelInputComponent implements OnInit {
       }
     }
     countryCode = countryCode ? countryCode : this.selectedCountry.iso2;
-
+    const internationalNumber = number ? format(number, 'INTERNATIONAL') : '';
+    const nationalNumber = number ? format(number, 'NATIONAL') : '';
 		this.propagateChange({
 			number: this.value,
-			internationalNumber: number ? this.phoneUtil.format(number, lpn.PhoneNumberFormat.INTERNATIONAL) : '',
-			nationalNumber: number ? this.phoneUtil.format(number, lpn.PhoneNumberFormat.NATIONAL) : '',
+			internationalNumber,
+			nationalNumber,
       countryCode: countryCode.toUpperCase()
 		});
 	}
@@ -109,16 +109,17 @@ export class NgxIntlTelInputComponent implements OnInit {
 		if (this.phoneNumber.length > 0) {
 			this.value = this.phoneNumber;
 
-			let number: lpn.PhoneNumber;
+			let number: ParsedNumber;
 			try {
-				number = this.phoneUtil.parse(this.phoneNumber, this.selectedCountry.iso2.toUpperCase());
+				number = parse(this.phoneNumber, this.selectedCountry.iso2);
 			} catch (e) {
 			}
-
+      const internationalNumber = number ? format(number, 'INTERNATIONAL') : '';
+      const nationalNumber = number ? format(number, 'NATIONAL') : '';
 			this.propagateChange({
 				number: this.value,
-				internationalNumber: number ? this.phoneUtil.format(number, lpn.PhoneNumberFormat.INTERNATIONAL) : '' ,
-				nationalNumber: number ? this.phoneUtil.format(number, lpn.PhoneNumberFormat.NATIONAL) : '',
+				internationalNumber,
+				nationalNumber,
 				countryCode: this.selectedCountry.iso2.toUpperCase()
 			});
 		}
@@ -138,7 +139,7 @@ export class NgxIntlTelInputComponent implements OnInit {
 		this.countryCodeData.allCountries.forEach(c => {
 			const country: Country = {
 				name: c[0].toString(),
-				iso2: c[1].toString(),
+				iso2: (c[1].toString().toUpperCase() as PhoneCountryCode),
 				dialCode: c[2].toString(),
 				priority: +c[3] || 0,
 				areaCode: +c[4] || undefined,
@@ -147,16 +148,17 @@ export class NgxIntlTelInputComponent implements OnInit {
 			};
 
 			if (this.enablePlaceholder) {
-				country.placeHolder = this.getPhoneNumberPlaceHolder(country.iso2.toUpperCase());
+				country.placeHolder = this.getPhoneNumberPlaceHolder(country.iso2);
 			}
 
 			this.allCountries.push(country);
 		});
 	}
 
-	protected getPhoneNumberPlaceHolder(countryCode: string): string {
+	protected getPhoneNumberPlaceHolder(countryCode: PhoneCountryCode): string {
 		try {
-			return this.phoneUtil.format(this.phoneUtil.getExampleNumber(countryCode), lpn.PhoneNumberFormat.INTERNATIONAL);
+      const example: PhoneNumber = getExampleNumber(countryCode, examples);
+			return format(example.number, countryCode, 'INTERNATIONAL');
 		} catch (e) {
 			console.log('CountryCode: "' + countryCode + '" ' + e);
 			return e;
@@ -183,9 +185,4 @@ export class NgxIntlTelInputComponent implements OnInit {
 			}, 1);
 		}
   }
-  private getCountryIsoCode(countryCode: number): string | undefined {
-    const country = this.allCountries.find(c => c.dialCode === countryCode.toString());
-    return country ? country.iso2 : undefined;
-  }
-
 }
