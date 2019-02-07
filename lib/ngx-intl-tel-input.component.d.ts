@@ -1,0 +1,32 @@
+import { OnInit } from '@angular/core';
+import { CountryCode } from './data/country-code';
+import { Country } from './model/country.model';
+import { CountryCode as PhoneCountryCode } from 'libphonenumber-js';
+export declare class NgxIntlTelInputComponent implements OnInit {
+    private countryCodeData;
+    value: string;
+    preferredCountries: Array<string>;
+    enablePlaceholder: boolean;
+    cssClass: string;
+    onlyCountries: Array<string>;
+    enableAutoCountrySelect: boolean;
+    phoneNumber: string;
+    allCountries: Array<Country>;
+    preferredCountriesInDropDown: Array<Country>;
+    selectedCountry: Country;
+    disabled: boolean;
+    errors: Array<any>;
+    onTouched: () => void;
+    propagateChange: (_: any) => void;
+    constructor(countryCodeData: CountryCode);
+    ngOnInit(): void;
+    onPhoneNumberChange(): void;
+    onCountrySelect(country: Country, el: any): void;
+    onInputKeyPress(event: any): void;
+    protected fetchCountryData(): void;
+    protected getPhoneNumberPlaceHolder(countryCode: PhoneCountryCode): string;
+    registerOnChange(fn: any): void;
+    registerOnTouched(fn: any): void;
+    setDisabledState(isDisabled: boolean): void;
+    writeValue(obj: any): void;
+}
